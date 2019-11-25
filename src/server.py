@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+import sys
+import ssl
+import argparse
 import asyncio
 import websockets
 import logging
@@ -14,19 +17,19 @@ logging.basicConfig(level=logging.INFO, format=FORMAT)
 LIST_CLIENTS = {}
 
 def get_welcome_message(name):
-    return 'Welcome to websocket-chat, {}'.format(name)
+    return f'Welcome to websocket-chat, {name}'
 
 def get_current_users_messages(users):
-    return 'There are {} other users connected: {}'.format(len(users), list(users.values()))
+    return f'There are {len(users)} other users connected: {list(users.values())}'
 
 def get_saying_messages(name, message):
-    return 'send {}: {}'.format(name, message)
+    return f'send {name}: {message}'
 
 def get_join_event(name):
-    return name + ' has joined the chat'
+    return f'{name} has joined the chat'
 
 def get_leave_event(name):
-    return name + ' has left the chat'
+    return f'{name} has left the chat'
 
 async def notify_users(message, users):
     if users:
@@ -39,31 +42,31 @@ async def handle_client_message(websocket, path, name, all_users):
         try:
             message = await websocket.recv()
         except Exception as ex:
-            logging.info('exception {}'.format(ex))
+            logging.info(f'exception {ex}')
             their_name = all_users[websocket]
             del all_users[websocket]
-            message = get_leave_event(name)
+            message = get_leave_event(their_name)
             await notify_users(message, all_users)
             break
+        
         if message is None:
             their_name = all_users[websocket]
             del all_users[websocket]
-            logging.info('Client closed connection {}'.format(websocket))
-            message = get_leave_event(name)
+            logging.info(f'Client closed connection {their_name}')
+            message = get_leave_event(their_name)
             await notify_users(message, all_users)
             break
 
-        logging.info('recv {}'.format(message))
         message = get_saying_messages(name, message)
-        logging.info('send {}: {}'.format(name, message))
+        logging.info(f'send {name}: {message}')
         # Send message to all clients
         await notify_users(message, all_users)
         await asyncio.sleep(1)
 
 
 async def handle(websocket, path):
-    logging.info('New client {}'.format(websocket))
-    logging.info(' ({} existing clients)'.format(len(LIST_CLIENTS)))
+    logging.info(f'New client {websocket}')
+    logging.info(f' ({len(LIST_CLIENTS)} existing clients)')
 
     # The first line from the client is the name
     name = await websocket.recv()
@@ -81,9 +84,19 @@ async def handle(websocket, path):
     await handle_client_message(websocket, path, name, LIST_CLIENTS)
 
 
-if __name__ == '__main__':
+def main(argv=None):
+    parser = argparse.ArgumentParser(prog='chat client', description='websocket chat client')
+    parser.add_argument('--bind-ip', default='localhost', help='bind ip')
+    parser.add_argument('--bind-port', default=8567, help='bind port')
+    parser.add_argument('--ca-file', required=False, help='ca file')
+    parser.add_argument('--allowed-clients', required=False, help='allowed clients')
+    args = parser.parse_args(argv)
+
+    ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    ssl_context.load_cert_chain(args.ca_file)
     # close ping/pong for unexcept connection close
-    start_server = websockets.serve(handle, "localhost", 8765, ping_interval=None)
+    start_server = websockets.serve(
+        handle, args.bind_ip, args.bind_port, ssl=ssl_context, ping_interval=None)
     loop = asyncio.get_event_loop()
     loop.run_until_complete(start_server)
     try:
@@ -92,3 +105,7 @@ if __name__ == '__main__':
         pass
     finally:
         loop.close()
+
+        
+if __name__ == "__main__":
+    main(sys.argv[1:])
