@@ -17,19 +17,19 @@ logging.basicConfig(level=logging.INFO, format=FORMAT)
 LIST_CLIENTS = {}
 
 def get_welcome_message(name):
-    return f'Welcome to websocket-chat, {name}'
+    return f'Welcome to websocket-chat, { name }'
 
 def get_current_users_messages(users):
-    return f'There are {len(users)} other users connected: {list(users.values())}'
+    return f'There are { len(users) } other users connected: { list(users.values()) }'
 
 def get_saying_messages(name, message):
-    return f'send {name}: {message}'
+    return f'{ name }: { message }'
 
 def get_join_event(name):
-    return f'{name} has joined the chat'
+    return f'{ name } has joined the chat'
 
 def get_leave_event(name):
-    return f'{name} has left the chat'
+    return f'{ name } has left the chat'
 
 async def notify_users(message, users):
     if users:
@@ -42,7 +42,7 @@ async def handle_client_message(websocket, path, name, all_users):
         try:
             message = await websocket.recv()
         except Exception as ex:
-            logging.info(f'exception {ex}')
+            logging.info(f'exception { ex }')
             their_name = all_users[websocket]
             del all_users[websocket]
             message = get_leave_event(their_name)
@@ -52,13 +52,13 @@ async def handle_client_message(websocket, path, name, all_users):
         if message is None:
             their_name = all_users[websocket]
             del all_users[websocket]
-            logging.info(f'Client closed connection {their_name}')
+            logging.info(f'Client closed connection { their_name }')
             message = get_leave_event(their_name)
             await notify_users(message, all_users)
             break
 
         message = get_saying_messages(name, message)
-        logging.info(f'send {name}: {message}')
+        logging.info(f'send { name }: { message }')
         # Send message to all clients
         await notify_users(message, all_users)
         await asyncio.sleep(1)
@@ -66,7 +66,7 @@ async def handle_client_message(websocket, path, name, all_users):
 
 async def handle(websocket, path):
     logging.info(f'New client {websocket}')
-    logging.info(f' ({len(LIST_CLIENTS)} existing clients)')
+    logging.info(f' ({ len(LIST_CLIENTS) } existing clients)')
 
     # The first line from the client is the name
     name = await websocket.recv()
