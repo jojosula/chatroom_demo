@@ -6,28 +6,33 @@ import argparse
 import asyncio
 import websockets
 import logging
-
-FORMAT = '%(asctime)-15s  %(filename)s - [line:%(lineno)d] %(message)s'
-logging.basicConfig(level=logging.INFO, format=FORMAT)
-
-# logger = logging.getLogger('websockets')
-# logger.setLevel(logging.DEBUG)
-# logger.addHandler(logging.StreamHandler())
+from datetime import datetime
 
 LIST_CLIENTS = {}
 
+def add_timestamp(func):
+    def warp(*args, **kwargs):
+        new_result = f'{ datetime.now().strftime("%Y-%m-%d %H:%M") } { func(*args, **kwargs) }'
+        return new_result
+    return warp
+
+@add_timestamp
 def get_welcome_message(name):
     return f'Welcome to websocket-chat, { name }'
 
+@add_timestamp
 def get_current_users_messages(users):
     return f'There are { len(users) } other users connected: { list(users.values()) }'
 
+@add_timestamp
 def get_saying_messages(name, message):
     return f'{ name }: { message }'
 
+@add_timestamp
 def get_join_event(name):
     return f'{ name } has joined the chat'
 
+@add_timestamp
 def get_leave_event(name):
     return f'{ name } has left the chat'
 
@@ -58,13 +63,14 @@ async def handle_client_message(websocket, path, name, all_users):
             break
 
         message = get_saying_messages(name, message)
-        logging.info(f'send { name }: { message }')
+        logging.info(f'send { message }')
         # Send message to all clients
         await notify_users(message, all_users)
         await asyncio.sleep(1)
 
 
 async def handle(websocket, path):
+    global LIST_CLIENTS
     logging.info(f'New client {websocket}')
     logging.info(f' ({ len(LIST_CLIENTS) } existing clients)')
 
@@ -92,6 +98,9 @@ def main(argv=None):
     parser.add_argument('--allowed-clients', required=False, help='allowed clients')
     args = parser.parse_args(argv)
 
+    log_format = '%(asctime)-15s  %(filename)s - [line:%(lineno)d] %(message)s'
+    logging.basicConfig(filename='server_debug.log', level=logging.INFO, format=log_format)
+    # init websocket ssl context
     ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     ssl_context.load_cert_chain(args.ca_file)
     # close ping/pong for unexcept connection close
@@ -101,8 +110,8 @@ def main(argv=None):
     loop.run_until_complete(start_server)
     try:
         loop.run_forever()
-    except KeyboardInterrupt:
-        pass
+    except Exception as ex:
+        logging.exception(f"{ ex }")
     finally:
         loop.close()
 
