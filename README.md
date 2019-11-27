@@ -10,11 +10,19 @@ This is demo project for chat room by python.
     pip install -r res/requirements.txt
 
 3. Execute Server
-    python server.py --ca-file D:\johnchang_project\chatroom_demo\conf\server.pem
+    python main.py serve --ca-file D:\johnchang_project\chatroom_demo\conf\server.pem
 
 4. Execute Client
-    python client.py --ca-file D:\johnchang_project\chatroom_demo\conf\server.pem --user-name aa
-    python client.py --ca-file D:\johnchang_project\chatroom_demo\conf\server.pem --user-name bb
+    python main.py connect --ca-file D:\johnchang_project\chatroom_demo\conf\server.pem --handle aa
+    python main.py connect --ca-file D:\johnchang_project\chatroom_demo\conf\server.pem --handle bb
     ...
 
 5. Start chatting!
+
+## Run executable files
+
+### Windows
+* Execute Server
+chatroom serve --bind-ip 127.0.0.1 --bind-port 8000 --ca-file D:\johnchang_project\chatroom_demo\conf\server.pem
+* Execute Client
+chatroom connect --host localhost --bind-port 8000 --ca-file D:\johnchang_project\chatroom_demo\conf\server.pem --handle username

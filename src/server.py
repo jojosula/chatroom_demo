@@ -108,26 +108,3 @@ class ChatServer(object):
     def close(self):
         self.loop.close()
 
-
-def main(argv=None):
-    parser = argparse.ArgumentParser(prog='chat client', description='websocket chat client')
-    parser.add_argument('--bind-ip', default='localhost', help='bind ip')
-    parser.add_argument('--bind-port', default=8567, help='bind port')
-    parser.add_argument('--ca-file', required=False, help='ca file')
-    parser.add_argument('--allowed-clients', required=False, help='allowed clients')
-    args = parser.parse_args(argv)
-
-    log_format = '%(asctime)-15s  %(filename)s - [line:%(lineno)d] %(message)s'
-    logging.basicConfig(level=logging.INFO, format=log_format)
-    
-    try:
-        server = ChatServer(args)
-        server.run()
-    except Exception as ex:
-        logging.exception(f"{ ex }")
-    finally:
-        server.close()
-
-
-if __name__ == "__main__":
-    main(sys.argv[1:])

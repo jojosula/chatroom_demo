@@ -17,7 +17,7 @@ class ChatClient(object):
         # screenObj should be 'stdscr' or a curses window/pad object
         self.stdscr = curses.initscr() # initialize curses
         self.screenObj = Screen(self.stdscr)   # create Screen object
-        self.user_name = args.user_name
+        self.user_name = args.handle
         self.host = args.host
         self.port = args.port
         # init websocket ssl context
@@ -158,27 +158,3 @@ class Screen(object):
         curses.echo()
         curses.endwin()
 
-
-def main(argv=None):
-    parser = argparse.ArgumentParser(prog='chat client', description='websocket chat client')
-    parser.add_argument('--user-name', default='Username', help='user name')
-    parser.add_argument('--host', default='localhost', help='bind ip')
-    parser.add_argument('--port', default=8567, help='bind port')
-    parser.add_argument('--ca-file', required=False, help='ca file')
-    parser.add_argument('--client-cert', required=False, help='client certificate')
-    args = parser.parse_args(argv)
-
-    log_format = '%(asctime)-15s %(filename)s - [line:%(lineno)d] %(message)s'
-    logging.basicConfig(filename='client_debug.log', level=logging.INFO, format=log_format)
-
-    try:
-        client = ChatClient(args)
-        client.run()
-    except Exception as ex:
-        logging.exception(f"{ ex }")
-    finally:
-        client.close()
-
-
-if __name__ == '__main__':
-    main(sys.argv[1:])
