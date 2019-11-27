@@ -19,6 +19,17 @@ This is demo project for chat room by python.
 
 5. Start chatting!
 
+## Package python application
+
+1. Install pyinstaller
+    pip install pyinstaller
+
+2. Package
+    pyinstaller -F main.py
+    note: if it shows "TypeError: an integer is required (got type bytes)", you can fix it by installing developer version.
+    pip install https://github.com/pyinstaller/pyinstaller/archive/develop.tar.gz
+    ref: https://github.com/pyinstaller/pyinstaller/issues/4265
+
 ## Run executable files
 
 ### Windows
