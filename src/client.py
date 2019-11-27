@@ -132,12 +132,14 @@ class Screen(object):
                 self.inputText = self.inputText[:-1]
 
             elif c == curses.KEY_ENTER or c == 10:
+                if len(self.inputText) == 0:
+                    continue
                 queue.put_nowait(self.inputText)
                 self.inputText = ''
 
             else:
                 if len(self.inputText) == self.cols-2:
-                    return
+                    continue
                 # get char
                 if c >= 0:
                     self.inputText = self.inputText + chr(c)
