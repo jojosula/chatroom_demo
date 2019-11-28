@@ -1,28 +1,32 @@
 #!/usr/bin/env python
 
-import sys
 import ssl
-import argparse
 import asyncio
 import websockets
 import logging
 import curses
-import traceback
 
 
 class ChatClient(object):
-    """ A client object for chat """
+    """ A Client object for chat room """
 
     def __init__(self, args):
+        # init websocket ssl context
+        self.ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        try:
+            if args.client_cert:
+                self.ssl_context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+                self.ssl_context.load_cert_chain(args.client_cert)
+            self.ssl_context.load_verify_locations(args.ca_file)
+        except Exception as e:
+            print(f'init client failed! {e}')
+            raise e
         # screenObj should be 'stdscr' or a curses window/pad object
         self.stdscr = curses.initscr() # initialize curses
         self.screenObj = Screen(self.stdscr)   # create Screen object
         self.user_name = args.handle
         self.host = args.host
         self.port = args.port
-        # init websocket ssl context
-        self.ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        self.ssl_context.load_verify_locations(args.ca_file)
         # message queue
         self.queue = asyncio.Queue()
         self.loop = asyncio.get_event_loop()
@@ -48,28 +52,38 @@ class ChatClient(object):
             await websocket.send(message)
 
     async def __async__connect(self):
-        # close ping/pong for unexcept connection close
-        async with websockets.connect(f'wss://{self.host}:{self.port}', ssl=self.ssl_context, ping_interval=None) as websocket:
-            await websocket.send(self.user_name)
-            handle_message_task = asyncio.create_task(
-                self.handle_server_message(websocket))
-            handle_input_task = asyncio.create_task(
-                self.handle_input_message(websocket))
-            handle_read_input_task = asyncio.create_task(
-                self.read_input())
-            await handle_message_task
-            await handle_input_task
-            await handle_read_input_task
-            # cancel tasks
-            handle_message_task.cancel()
-            handle_input_task.cancel()
-            handle_read_input_task.cancel()
+        uri = f'wss://{self.host}:{self.port}'
+        try:
+            # close ping/pong for unexcept connection close
+            connection = websockets.connect(uri, ssl=self.ssl_context, ping_interval=None)
+
+            async with connection as websocket:
+                await websocket.send(self.user_name)
+                handle_message_task = asyncio.create_task(
+                    self.handle_server_message(websocket))
+                handle_input_task = asyncio.create_task(
+                    self.handle_input_message(websocket))
+                handle_read_input_task = asyncio.create_task(
+                    self.read_input())
+                await handle_message_task
+                await handle_input_task
+                await handle_read_input_task
+                # cancel tasks
+                handle_message_task.cancel()
+                handle_input_task.cancel()
+                handle_read_input_task.cancel()
+        except Exception as e:
+            print(f'connection failed {e}')
+            self.close()
+            raise e
+
 
     def run(self):
         return self.loop.run_until_complete(self.__async__connect())
 
     def close(self):
         self.screenObj.close()
+
 
 class Screen(object):
     def __init__(self, stdscr):

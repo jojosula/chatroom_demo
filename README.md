@@ -13,13 +13,17 @@ This is demo project for chat room by python.
 
 3. Execute Server
 
-    python main.py serve --ca-file D:\johnchang_project\chatroom_demo\conf\server.pem
+    python main.py serve --ca-file D:\johnchang_project\chatroom_demo\conf\server_cert\server.pem
+
+    python main.py serve --ca-file D:\johnchang_project\chatroom_demo\conf\server_cert\server.pem --allowed-clients D:\johnchang_project\chatroom_demo\conf\client_cert\client1.crt
 
 4. Execute Client
 
     python main.py connect --ca-file D:\johnchang_project\chatroom_demo\conf\server.pem --handle aa
     python main.py connect --ca-file D:\johnchang_project\chatroom_demo\conf\server.pem --handle bb
-    ...
+
+    python main.py connect --ca-file D:\johnchang_project\chatroom_demo\conf\server_cert\server.pem --client-cert D:\johnchang_project\chatroom_demo\conf\client_cert\client1.pem --handle aa
+    python main.py connect --ca-file D:\johnchang_project\chatroom_demo\conf\server_cert\server.pem --client-cert D:\johnchang_project\chatroom_demo\conf\client_cert\client1.pem --handle bb
 
 5. Start chatting!
 

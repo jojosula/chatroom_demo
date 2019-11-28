@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 
-import sys
 import ssl
-import argparse
 import asyncio
 import websockets
 import logging
 from datetime import datetime
+
 
 class ChatServer(object):
     """ A Server object for chat room """
@@ -14,7 +13,17 @@ class ChatServer(object):
     def __init__(self, args):
         # init websocket ssl context
         self.ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-        self.ssl_context.load_cert_chain(args.ca_file)
+        self.allowed_clients_cert = []
+        try:
+            if args.allowed_clients:
+                self.ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+                self.ssl_context.options |= ssl.PROTOCOL_TLS_SERVER
+                self.ssl_context.verify_mode = ssl.CERT_REQUIRED
+                self.ssl_context.load_verify_locations(cafile=args.allowed_clients)
+            self.ssl_context.load_cert_chain(args.ca_file)
+        except Exception as e:
+            print(f'init server failed! {e}')
+            raise e
         self.loop = asyncio.get_event_loop()
         self.bind_ip = args.bind_ip
         self.bind_port = args.bind_port
@@ -28,11 +37,11 @@ class ChatServer(object):
 
     @add_timestamp
     def get_welcome_message(self, name):
-        return f'Welcome to websocket-chat, { name }'
+        return f'Welcome to chatroom demo, { name }!'
 
     @add_timestamp
     def get_current_users_messages(self, users):
-        return f'There are { len(users) } other users connected: { list(users.values()) }'
+        return f'There are { len(users) } other users connected: { list(users.values()) }.'
 
     @add_timestamp
     def get_saying_messages(self, name, message):
@@ -79,8 +88,7 @@ class ChatServer(object):
             await asyncio.sleep(1)
 
     async def handle(self, websocket, path):
-        logging.info(f'New client {websocket}')
-        logging.info(f' ({ len(self.list_clients) } existing clients)')
+        logging.info(f'New client {websocket} ({ len(self.list_clients) } existing clients)')
 
         # The first line from the client is the name
         name = await websocket.recv()
@@ -98,12 +106,16 @@ class ChatServer(object):
         await self.handle_client_message(websocket, path, name, self.list_clients)
 
     def run(self):
-        # close ping/pong for unexcept connection close
-        start_server = websockets.serve(
-            self.handle, self.bind_ip, self.bind_port, ssl=self.ssl_context, ping_interval=None)
-        
-        self.loop.run_until_complete(start_server)
-        return self.loop.run_forever()
+        try:
+            # close ping/pong for unexcept connection close
+            start_server = websockets.serve(
+                self.handle, self.bind_ip, self.bind_port, ssl=self.ssl_context, ping_interval=None)
+            
+            self.loop.run_until_complete(start_server)
+            self.loop.run_forever()
+        except Exception as e:
+            self.close()
+            raise e
 
     def close(self):
         self.loop.close()
