@@ -1,1 +1,2 @@
 websockets==8.1
+PyInstaller==3.5
